@@ -2,16 +2,8 @@ let app = Vue.createApp({
   data() {
     return {
       showSidebar: false,
-      inventory: {
-        carrots: 0,
-        pineapples: 0,
-        cherries: 0,
-      },
-      cart: {
-        carrots: 0,
-        pineapples: 0,
-        cherries: 0,
-      },
+      inventory: [],
+      cart: {},
     };
   },
   methods: {
@@ -19,19 +11,25 @@ let app = Vue.createApp({
       console.log("inventory: ", this.inventory);
       console.log("cart: ", this.cart);
     },
-    addToCart(type, quantity) {
-      console.log("quantity", quantity);
-      this.cart[type] += quantity;
-      console.log("carrots:", this.cart.carrots);
-    },
-    addToCart2(type) {
-      console.log("this.inventory[cherries]", this.inventory[type]);
-      this.cart[type] += this.inventory[type];
-      console.log("cherries: ", this.cart.cherries);
+    addToCart(name, index) {
+      this.cart[name]
+        ? (this.cart[name] += this.inventory[index].quantity)
+        : (this.cart[name] = this.inventory[index].quantity);
+      console.log(
+        "this.inventory[index].quantity;:",
+        this.inventory[index].quantity
+      );
+      console.log(`this.cart[${name}]`, this.cart[name]);
     },
     toggleSidebar() {
       this.showSidebar = !this.showSidebar;
     },
+  },
+  async mounted() {
+    const response = await fetch("./food.json");
+    const data = await response.json();
+    this.inventory = data;
+    console.log("this.inventory", this.inventory);
   },
 });
 
