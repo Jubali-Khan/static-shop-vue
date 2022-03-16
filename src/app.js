@@ -6,6 +6,13 @@ let app = Vue.createApp({
       cart: {},
     };
   },
+  computed: {
+    totalInCart() {
+      return Object.values(this.cart).reduce((acc, nextVal) => {
+        return acc + nextVal;
+      }, 0);
+    },
+  },
   methods: {
     showInvAndCart() {
       console.log("inventory: ", this.inventory);
@@ -24,22 +31,37 @@ let app = Vue.createApp({
     toggleSidebar() {
       this.showSidebar = !this.showSidebar;
     },
+    removeItem(name) {
+      delete this.cart[name];
+    },
   },
   async mounted() {
     const response = await fetch("./food.json");
     const data = await response.json();
     this.inventory = data;
-    console.log("this.inventory", this.inventory);
+    // console.log("this.inventory", this.inventory);
   },
 });
 
 app.component("sidebar", {
-  props: ["toggle", "cart"],
+  props: ["toggle", "cart", "inventory", "remove"],
   // computed property is used to organize expressions that'd be too long to put in {{}} and turn them into reactive functions
-  computed: {
-    // cartTotal: this.cart.carrots * 4.82,
-    cartTotal() {
-      return (this.cart.carrots * 4.82).toFixed(2);
+
+  methods: {
+    getPrice(productName) {
+      const product = this.inventory.find((productObj) => {
+        return productObj.name === productName;
+      });
+      return product.price.USD;
+    },
+    calculateTotal() {
+      const total = Object.entries(this.cart).reduce(
+        (prevValue, currValue, i) => {
+          return prevValue + currValue[1] * this.getPrice(currValue[0]);
+        },
+        0
+      );
+      return total.toFixed(2);
     },
   },
   template: `
@@ -66,14 +88,14 @@ app.component("sidebar", {
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr v-for="(quantity, key, i) in cart" key="i" >
                 <td><i class="icofont-carrot icofont-3x"></i></td>
-                <td>Carrot</td>
-                <td>$4.82</td>
-                <td class="center">{{ cart.carrots }}</td>
-                <td>\${{ (cart.carrots * 4.82).toFixed(2) }}.00</td>
+                <td>{{ key }}</td>
+                <td>\${{ getPrice(key) }}</td>
+                <td class="center">{{ quantity }}</td>
+                <td>\${{ (quantity * getPrice(key)).toFixed(2) }}.00</td>
                 <td class="center">
-                  <button class="btn btn-light cart-remove">
+                  <button v-on:click="remove(key)" class="btn btn-light cart-remove">
                     &times;
                   </button>
                 </td>
@@ -81,9 +103,9 @@ app.component("sidebar", {
             </tbody>
           </table>
 
-          <p class="center"><em>No items in cart</em></p>
+          <p class="center" v-if="Object.keys(this.cart).length < 1"><em>No items in cart</em></p>
           <div class="spread">
-            <span><strong>Total:</strong> \${{cartTotal}}</span>
+            <span><strong>Total:</strong> \${{calculateTotal()}} </span>
             <button class="btn btn-light">Checkout</button>
           </div>
         </div>
